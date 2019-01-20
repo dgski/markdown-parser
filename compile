@@ -1,2 +1,2 @@
 #!/bin/bash
-g++ -std=c++14 Main.cpp MarkdownToHTML.cpp -o markdown-parser -g
+g++ -std=c++14 Main.cpp MarkdownToHTML.cpp HTMLElement.cpp -o markdown-parser -g

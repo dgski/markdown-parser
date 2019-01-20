@@ -1,28 +1,45 @@
 #include <string>
 #include <regex>
-
-
-
-
+#include <memory>
+#include "HTMLElement.h"
 
 using namespace std;
 
-enum ParserState {
-        Nothing
+enum ParserLineState {
+        inNothing,
+        inParagraph,
+        inUnorderedList,
+        inOrderedList,
+        inCodeBlock
     };
+
+enum LineType {
+    Heading,
+    UnorderedListItem,
+    OrderedListItem,
+    CodeBlock,
+    Other
+};
 
 class MarkdownToHTML
 {
-    ParserState state = Nothing;
+    HTMLElement html{"html"};
+    HTMLElement* insertionPoint = &html;
 
-    void processHeadingLine(smatch& matches);
-    void processItalicLine(smatch& matches);
+    ParserLineState lineState = inNothing;
 
+    void processHeadingLine(string& input);
+    void processUnorderedListItemLine(string& input);
+    void processOrderedListItemLine(string& input);
+    void processCodeBlockLine(string& input);
+    void processOtherLine(string& input);
 
-    bool tryMatch(string& input, const char* expression);
+    LineType determineLineType(const string& input);
 
 public:
-    MarkdownToHTML() {};
+    MarkdownToHTML()
+    {
+    };
     void processLine(string& input);
     string generate();
 };
