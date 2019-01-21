@@ -32,7 +32,11 @@ HTMLElement& HTMLElement::appendChild(const HTMLElement& child)
 }
 
 string HTMLElement::generate() const
-{        
+{   
+    // For Text only nodes, maybe temp
+    if(tag == "text")
+        return generateContents();
+
     return string("<") + string(tag) + string(">") + generateContents() + string("</") + string(tag) + string(">") + string("\n");
 }
 

@@ -2,13 +2,13 @@
 
 ## This is a Sub-Heading
 
-Here we will a random paragraph for us to analyze!
+Here we will a random paragraph for us to analyze! We can add any text we want here!
 
 *Italic Text*
 
 - Unordered List Item One
 - Second Unordered List Item
-- Third Unordered List Item has some **Bold** Text
+- Third Unordered **List** Item has some **Bold** Text
 
 **[Link](http://apple.com)**
 
