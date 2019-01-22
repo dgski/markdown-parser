@@ -2,7 +2,9 @@
 
 ## This is a Sub-Heading
 
-Here we will a random paragraph for us to analyze! We can add any text we want here!
+### This is a third Sub-Heading!
+
+Here we will a **random** paragraph for us to analyze! We can add any text we *want* here! We can even add links like this one to [ubuntu.com](http://ubuntu.com).
 
 *Italic Text*
 

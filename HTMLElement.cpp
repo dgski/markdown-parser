@@ -15,11 +15,33 @@ string HTMLElement::generateContents() const
     return res;
 }
 
+string HTMLElement::generateAttributes() const
+{
+    string result;
+
+    if(!attributes.empty())
+        result += " ";
+
+    for(const auto& [key,value] : attributes)
+    {
+        result += key + string("='") + value + string("' ");
+    }
+
+    return result;
+}
+
 HTMLElement::HTMLElement(string _tag, string _textContent)
 {
     tag = _tag;
     textContent = _textContent;
 }
+
+HTMLElement& HTMLElement::setAttribute(const char*  attr, const char* val)
+{
+    attributes[attr] = val;
+    return *this;
+}
+
 
 HTMLElement& HTMLElement::appendChild(const HTMLElement& child)
 {
@@ -34,13 +56,13 @@ HTMLElement& HTMLElement::appendChild(const HTMLElement& child)
 string HTMLElement::generate() const
 {   
     // For Text only nodes, maybe temp
-    if(tag == "text")
+    if(tag == "text" || tag == "blank")
         return generateContents();
 
-    return string("<") + string(tag) + string(">") + generateContents() + string("</") + string(tag) + string(">") + string("\n");
+    return string("<") + string(tag) + generateAttributes() + string(">") + generateContents() + string("</") + string(tag) + string(">") + string("\n");
 }
 
-HTMLElement* HTMLElement::getParent()
+HTMLElement* HTMLElement::getParent() const
 {
     return parent;
 }

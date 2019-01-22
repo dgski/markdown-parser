@@ -1,20 +1,15 @@
 #include <iostream>
 #include "MarkdownToHTML.h"
 
-const regex headingRegex("(#+) (.+)");
-const regex unorderedListItemRegex("- (.+)");
-const regex orderedListItemRegex("([0-9]+)\\.(.+)");
-const regex codeRegex("```");
-
-const regex boldRegex("\\*\\*(.+)\\*\\*");
-const regex italicRegex("\\*(.+)\\*");
-const regex linkRegex("\\[(.+)\\]\\((.+)\\)");
-const regex imageRegex("!\\[(.+)\\]\\((.+)\\)");
-
 void MarkdownToHTML::processLine(string& input)
 {
     LineType currentLineType = determineLineType(input);
 
+    if(lineState == inCodeBlock && currentLineType != CodeBlock)
+    {
+        currentLineType = Other;
+    }
+    
     switch(currentLineType)
     {
     case Heading:
@@ -108,7 +103,21 @@ void MarkdownToHTML::processOrderedListItemLine(string& input)
 // Process a Line Containing a Code Block Start or End
 void MarkdownToHTML::processCodeBlockLine(string& input)
 {
+    if(lineState == inCodeBlock)
+    {
+        insertionPoint = insertionPoint->getParent();
+        lineState = inNothing;
+        return;
+    }
 
+
+    HTMLElement div = HTMLElement("div");
+    div
+        .setAttribute("class", "code")
+        .setAttribute("style", "padding: 10px; color: white; background-color: black");
+    
+    insertionPoint = &(insertionPoint->appendChild(div));
+    lineState = inCodeBlock;
 }
 
 // Process an Empty Line
@@ -139,6 +148,12 @@ void MarkdownToHTML::processOtherLine(string& input)
         insertionPoint = &(insertionPoint->appendChild(p));
         lineState = inParagraph;
     }
+
+    if(lineState == inCodeBlock)
+    {
+        insertionPoint->appendChild(HTMLElement("text", input));
+        insertionPoint->appendChild(HTMLElement("br"));
+    }
 }
 
 // Find Expression in String
@@ -148,23 +163,27 @@ void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement
     
     if(regex_search(input.begin(), input.end(), matches, boldRegex))
     {
+        cout << "# BOLD FOUND: " << endl;
         size_t view_length = matches[0].first - input.begin();
+        cout << "FRONT: " << string_view(input.begin(), view_length) << endl;
         processSubExpressions(string_view(input.begin(), view_length),  parent);
-
+        
         HTMLElement b = HTMLElement("b");
         view_length = matches[1].length();
+        cout << "MIDDLE: " << string_view(matches[1].first, view_length) << endl;
         processSubExpressions(string_view(matches[1].first, view_length), b);
         parent.appendChild(b);
 
         view_length = input.end() - matches[0].second;
+        cout << "END: " << string_view(matches[0].second, view_length) << endl;
         processSubExpressions(string_view(matches[0].second, view_length), parent);
     }
-    else if(regex_search(input.begin(), input.end(), matches, linkRegex))
+    else if(regex_search(input.begin(), input.end(), matches, italicRegex))
     {
         size_t view_length = matches[0].first - input.begin();
         processSubExpressions(string_view(input.begin(), view_length),  parent);
 
-        HTMLElement b = HTMLElement("a");
+        HTMLElement b = HTMLElement("i");
         view_length = matches[1].length();
         processSubExpressions(string_view(matches[1].first, view_length), b);
         parent.appendChild(b);
@@ -172,33 +191,39 @@ void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement
         view_length = input.end() - matches[0].second;
         processSubExpressions(string_view(matches[0].second, view_length), parent);
     }
-    else if(regex_search(input.begin(), input.end(), matches, linkRegex))
-    {
-        size_t view_length = matches[0].first - input.begin();
-        processSubExpressions(string_view(input.begin(), view_length),  parent);
-
-        HTMLElement b = HTMLElement("a");
-        view_length = matches[1].length();
-        processSubExpressions(string_view(matches[1].first, view_length), b);
-        parent.appendChild(b);
-
-        view_length = input.end() - matches[0].second;
-        processSubExpressions(string_view(matches[0].second, view_length), parent);
-    }
-
     else if(regex_search(input.begin(), input.end(), matches, imageRegex))
     {
+        cout << "# IMAGE FOUND: " << endl;
+
         size_t view_length = matches[0].first - input.begin();
         processSubExpressions(string_view(input.begin(), view_length),  parent);
 
-        HTMLElement b = HTMLElement("a");
+        HTMLElement img = HTMLElement("img");
         view_length = matches[1].length();
-        processSubExpressions(string_view(matches[1].first, view_length), b);
-        parent.appendChild(b);
+        img.setAttribute("alt", matches[1].str().c_str());
+        img.setAttribute("src", matches[2].str().c_str());
+        parent.appendChild(img);
 
         view_length = input.end() - matches[0].second;
         processSubExpressions(string_view(matches[0].second, view_length), parent);
     }
+    else if(regex_search(input.begin(), input.end(), matches, linkRegex))
+    {
+        cout << "# LINK FOUND: " << endl;
+
+
+        size_t view_length = matches[0].first - input.begin();
+        processSubExpressions(string_view(input.begin(), view_length),  parent);
+
+        HTMLElement a = HTMLElement("a");
+        view_length = matches[1].length();
+        processSubExpressions(string_view(matches[1].first, view_length), a);
+        a.setAttribute("href", matches[2].str().c_str());
+        parent.appendChild(a);
+
+        view_length = input.end() - matches[0].second;
+        processSubExpressions(string_view(matches[0].second, view_length), parent);
+    }    
     else
     {
         cout << input << endl;
@@ -207,44 +232,8 @@ void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement
     
 }
 
-// Determine what kind of expression this is
-ExpressionType MarkdownToHTML::determineExpressionType(const string& input)
-{
-    if(regex_match(input, boldRegex))               return Bold;
-    if(regex_match(input, italicRegex))             return Italic;
-    if(regex_match(input, linkRegex))               return Link;
-    if(regex_match(input, imageRegex))              return Image;
-
-    return Text;
-}
-
-// Process a markdown expression (non-line)
-void MarkdownToHTML::processExpression(const string& expression)
-{
-    ExpressionType currentExpressionType = determineExpressionType(expression);
-
-    switch(currentExpressionType)
-    {
-        case Bold:
-            /* processBold */
-            break;
-        case Italic:
-            /* processItalic */
-            break;
-        case Link:
-            /* processLink */
-            break;
-        case Image:
-            /* processImage */
-            break;
-        case Text:
-            /* processText */
-            break;
-    }
-}
-
 // Generate the HTML of the read file
 string MarkdownToHTML::generate()
 {
-    return html.generate();
+    return rootNode.generate();
 }

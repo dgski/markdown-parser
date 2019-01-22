@@ -5,6 +5,19 @@
 
 using namespace std;
 
+// Regular Expressions for line elements
+const regex headingRegex("\(#+) (.+)");
+const regex unorderedListItemRegex("- (.+)");
+const regex orderedListItemRegex("([0-9]+)\\.(.+)");
+const regex codeRegex("```");
+
+// Regular Expressions for in-line elements
+const regex boldRegex("\\*\\*(.+)\\*\\*");
+const regex italicRegex("\\*(.+)\\*");
+const regex linkRegex("\\[(.+)\\]\\((.+)\\)");
+const regex imageRegex("!\\[(.+)\\]\\((.+)\\)");
+
+// Represents the current state of the parser - needed for elements spaning multiple lines
 enum ParserLineState {
         inNothing,
         inParagraph,
@@ -13,6 +26,7 @@ enum ParserLineState {
         inCodeBlock
     };
 
+// Represents the regular expression matching the whole line
 enum LineType {
     Heading,
     UnorderedListItem,
@@ -22,22 +36,14 @@ enum LineType {
     Other
 };
 
-enum ExpressionType {
-    Bold,
-    Italic,
-    Link,
-    Image,
-    Text
-};
-
-
+// Specialized for string_view
 typedef match_results<std::string_view::const_iterator> sv_match;
 
 
 class MarkdownToHTML
 {
-    HTMLElement html{"html"};
-    HTMLElement* insertionPoint = &html;
+    HTMLElement rootNode;
+    HTMLElement* insertionPoint = nullptr;
 
     ParserLineState lineState = inNothing;
 
@@ -53,13 +59,15 @@ class MarkdownToHTML
 
     // Expression Processing
     void processSubExpressions(const string_view& input, HTMLElement& parent);
-    ExpressionType determineExpressionType(const string& input);
-    void processExpression(const string& expression);
-
 
 public:
-    MarkdownToHTML()
+    MarkdownToHTML(bool generateFullPage = true)
+    : rootNode((generateFullPage) ? "html" : "blank")
     {
+        if(generateFullPage)
+            insertionPoint = &(rootNode.appendChild(HTMLElement("body")));
+        else
+            insertionPoint = &rootNode;
     };
     void processLine(string& input);
     string generate();
