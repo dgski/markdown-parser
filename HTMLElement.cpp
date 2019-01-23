@@ -42,6 +42,11 @@ HTMLElement& HTMLElement::setAttribute(const char*  attr, const char* val)
     return *this;
 }
 
+void HTMLElement::setSingle(bool _single)
+{
+    single = _single;
+}
+
 
 HTMLElement& HTMLElement::appendChild(const HTMLElement& child)
 {
@@ -59,7 +64,12 @@ string HTMLElement::generate() const
     if(tag == "text" || tag == "blank")
         return generateContents();
 
-    return string("<") + string(tag) + generateAttributes() + string(">") + generateContents() + string("</") + string(tag) + string(">") + string("\n");
+    string res = string("<") + string(tag) + generateAttributes() + string(">");
+
+    if(!single)
+        res += generateContents() + string("</") + string(tag) + string(">") + string("\n");
+
+    return res;
 }
 
 HTMLElement* HTMLElement::getParent() const
