@@ -169,9 +169,7 @@ void MarkdownToHTML::processOtherLine(string& input)
 void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement& parent)
 {
     sv_match matches;
-
     ExpressionType currentExpression = determineExpressionType(input, matches);
-
 
     switch(currentExpression)
     {
@@ -196,33 +194,29 @@ void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement
 // Determine what kind of expression this is
 ExpressionType MarkdownToHTML::determineExpressionType(const string_view& input, sv_match& matches)
 {
-    if(regex_match(input.begin(), input.end(), matches, boldRegex))
+    if(regex_search(input.begin(), input.end(), matches, boldRegex))
         return Bold;
-    if(regex_match(input.begin(), input.end(), matches, italicRegex))
+    else if(regex_search(input.begin(), input.end(), matches, italicRegex))
         return Italic;
-    if(regex_match(input.begin(), input.end(), matches, imageRegex))
-        return Image;
-    if(regex_match(input.begin(), input.end(), matches, linkRegex))
+    else if(regex_search(input.begin(), input.end(), matches, linkRegex))
         return Link;
+    else if(regex_search(input.begin(), input.end(), matches, imageRegex))
+        return Image;
 
     return Text;
 }
 
 void MarkdownToHTML::processBoldExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
 {
-    cout << "# BOLD FOUND: " << endl;
     size_t view_length = matches[0].first - input.begin();
-    cout << "FRONT: " << string_view(input.begin(), view_length) << endl;
     processSubExpressions(string_view(input.begin(), view_length),  parent);
     
     HTMLElement b = HTMLElement("b");
     view_length = matches[1].length();
-    cout << "MIDDLE: " << string_view(matches[1].first, view_length) << endl;
     processSubExpressions(string_view(matches[1].first, view_length), b);
     parent.appendChild(b);
 
     view_length = input.end() - matches[0].second;
-    cout << "END: " << string_view(matches[0].second, view_length) << endl;
     processSubExpressions(string_view(matches[0].second, view_length), parent);
 }
 
@@ -242,8 +236,6 @@ void MarkdownToHTML::processItalicExpression(const string_view& input, const sv_
 
 void MarkdownToHTML::processImageExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
 {
-    cout << "# IMAGE FOUND: " << endl;
-
     size_t view_length = matches[0].first - input.begin();
     processSubExpressions(string_view(input.begin(), view_length),  parent);
 
@@ -259,7 +251,6 @@ void MarkdownToHTML::processImageExpression(const string_view& input, const sv_m
 
 void MarkdownToHTML::processLinkExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
 {
-    cout << "# LINK FOUND: " << endl;   
     size_t view_length = matches[0].first - input.begin();
     processSubExpressions(string_view(input.begin(), view_length),  parent);
 
