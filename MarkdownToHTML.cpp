@@ -275,3 +275,9 @@ string MarkdownToHTML::generate()
 {
     return rootNode.generate();
 }
+
+// Get the root node
+HTMLElement& MarkdownToHTML::getRootNode()
+{
+    return rootNode;
+}

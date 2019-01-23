@@ -90,6 +90,7 @@ public:
     };
     void processLine(string& input);
     string generate();
+    HTMLElement& getRootNode();
 };
 
 #pragma once
