@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #include "MarkdownToHTML.h"
 
@@ -23,11 +24,15 @@ int main(int argc, char** argv)
         return -2;
     }
 
+    auto start = chrono::system_clock::now();
+
     MarkdownToHTML parser(false);
     string line;
+    string contents;
 
     while(getline(file,line))
     {
+        contents += line;
         parser.processLine(line);
     }
 
@@ -40,7 +45,10 @@ int main(int argc, char** argv)
 
     out_file << parser.generate();
 
+    auto end = chrono::system_clock::now();
+    auto dur = (end - start).count() / 1000000.00;
 
+    cout << LOG_STRING "html generation took: " << dur << "s" << endl;
 
     return 0;
 }

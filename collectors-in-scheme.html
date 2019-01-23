@@ -1,0 +1,118 @@
+<p>---</p>
+<p>The Collector paradigm is a functional way of assembling and processing collections of data. As a design pattern it also offers a few benefits, and at the very least provides a unique academic exercise.</p>
+<p>I've recently been working through the classic book; [The Little Schemer](https://www.goodreads.com/book/show/548914.The_Little_Schemer), which is a cute and concise introduction to Scheme. The Chapter covering this topic delivered the first real friction, so I took some time to chew through it, understand it, and expand its explanation.</p>
+<p>Let's start by defining a function which takes a list of numbers, and uses the collector paradigm to sort the numbers into two categories, Odd and Even:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(define sep-odds<br></br>
+  (lambda (lat col)<br></br>
+    (cond<br></br>
+      ((null? lat)<br></br>
+        (col '() '()))<br></br>
+      ((= (modulo (car lat) 2) 0)<br></br>
+        (sep-odds (cdr lat) (lambda (odds evens)<br></br>
+                              (col odds (cons (car lat) evens)))))<br></br>
+      (else<br></br>
+        (sep-odds (cdr lat) (lambda (odds evens)<br></br>
+                                (col (cons (car lat) odds) evens)))))))<br></br>
+</div>
+<p>This function will consume two arguments: a list of numbers (lat) and a collector function (col). Its body consist's of one **cond** statement with 3 branches:</p>
+<p>Branch                       | Description</p>
+<p>Take a note as to how **sep-odds** recurs: It does not build a list in the simple way of functionally building up a collection. Instead, if **sep-odds** is to recur it builds a lambda function which will perform a particular task (in this case using **cons** to prepend the number to one of the lists) and then passes this lambda function to the next call of **sep-odds** as the **col** argument.</p>
+<p>Wrapping a task in a lambda is a neat trick: It delays execution of the wrapped code until the lambda is called.</p>
+<p>Another neat trick is that **sep-odds** stuffs the previous collector function (bound to **col** as a function parameter) into the new lambda's body. I like to visualize this as a sandwich, with previous collectors being stuffed inside new ones. Finally, when one of these lambdas is called, it does its work, and then calls the collector function embedded inside it.</p>
+<p>For our **sep-odds** function, you may notice that we need to provide an initial collector. Let's get to it.</p>
+<p><i>*First Time with Scheme?** *Please Note: (car x) returns the first element of the list x, and (cdr x) returns list x excluding the first element.</i>
+</p>
+<p>We will define **list** as our 0th collector. This will be the very centre of the lambda function sandwich:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(define col-0 list)<br></br>
+</div>
+<p>Now let's step through what happens when we perform the following function call:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(sep-odds '(1 2 3 4) col-0) ; return value -> ((1 3) (2 4))<br></br>
+</div>
+<p>**(car lat)** for the first call of sep-odds is **1**, therefore the third condition (**else**) is matched. This will generate a new lambda with **col-0** as **col** and **1 (car lat)** inside it. For clarity, we will label this newly generated lambda function as **col-1**:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >; consumes two lists (odds and evens) and adds 1 to the odds list<br></br>
+(define col-1<br></br>
+  (lambda (odds evens)<br></br>
+    (col-0 (cons 1 odds) evens)))<br></br>
+</div>
+<p>This conditional branch will then call sep-odds again, with the rest of the list **(cdr lat)** and the newly-generated **col-1** as arguments:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(sep-odds '(2 3 4) col-1)<br></br>
+</div>
+<p>After this second function call the second conditional branch **(= (modulo (car lat) 2) 0)** is triggered as **2** is an even number. Same story again: a new lambda is built, but this time **col-1** is bound to **col**:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >; consumes two lists (odds and evens) and adds 2 to the evens list<br></br>
+(define col-2<br></br>
+  (lambda (odds evens)<br></br>
+    (col-1 odds (cons 2 evens))))<br></br>
+</div>
+<p>Now **col-2** and the remainder of the list will serve as the arguments for the **sep-odds** recursive call:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(sep-odds '(3 4) col-2)<br></br>
+</div>
+<p>We repeat, again with an odd number (**3**):</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >; consumes two lists (odds and evens) and adds 3 to the odds list<br></br>
+(define col-3<br></br>
+  (lambda (odds evens)<br></br>
+    (col-2 (cons 3 odds) evens)))<br></br>
+</div>
+<p>and our next call:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(sep-odds '(4) col-3)<br></br>
+</div>
+<p>Again, with an even number (**4**):</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >; consumes two lists (odds and evens) and adds 4 to the evens list<br></br>
+(define col-4<br></br>
+  (lambda (odds evens)<br></br>
+    (col-3 odds (cons 4 evens))))<br></br>
+</div>
+<p>Finally, since the input list is empty, the **null?** conditional is triggered with this final call:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(sep-odds '() col-4)<br></br>
+</div>
+<p>That **null?** conditional applies the **col** function. In this case it is our latest, **col-4**:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >; excerpt:<br></br>
+((null? lat) (col-4 '() '()))<br></br>
+</div>
+<p>At this moment our sandwich is at its juiciest. Each layer takes an input from the previous one, as the layers are stripped away. We will begin with the outside 'bun' of the sandwich and go inwards. Each collector function calls the collector embedded within it:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(define col-4<br></br>
+  (lambda (odds evens)<br></br>
+    (col-3 odds (cons 4 evens))))<br></br>
+;   |____|<br></br>
+;     |<br></br>
+;     |<br></br>
+      (define col-3<br></br>
+        (lambda (odds evens)<br></br>
+          (col-2 (cons 3 odds) evens)))<br></br>
+;         |____|<br></br>
+;           |<br></br>
+;           |<br></br>
+            (define col-2<br></br>
+              (lambda (odds evens)<br></br>
+                (col-1 odds (cons 2 evens))))<br></br>
+;               |____|<br></br>
+;                 |<br></br>
+;                 |<br></br>
+                  (define col-1<br></br>
+                    (lambda (odds evens)<br></br>
+                      (col-0 (cons 1 odds) evens)))<br></br>
+<br></br>
+</div>
+<p>We are lucky we used labels, In reality the lambda generated looks like this:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >(lambda (odds evens)<br></br>
+    ((lambda (odds evens)<br></br>
+          ((lambda (odds evens)<br></br>
+                ((lambda (odds evens)<br></br>
+                      (col-0 (cons 1 odds) evens))<br></br>
+                  odds (cons 2 evens)))<br></br>
+            (cons 3 odds) evens))<br></br>
+      odds (cons 4 evens)))<br></br>
+</div>
+<p>And this is how the function calls look with the computed values of the arguments:</p>
+<div class='code' style='padding: 10px; color: white; background-color: black' >1. (col-4 '() '())<br></br>
+2. (col-3 '() '(4))<br></br>
+3. (col-2 '(3) '(4))<br></br>
+4. (col-1 '(3) '(2 4))<br></br>
+5. (col-0 '(1 3) '(2 4))<br></br>
+6. (list '(1 3) '(2 4))<br></br>
+7. ((1 3) (2 4))<br></br>
+</div>
+<p>All of these expressions have the same value.</p>
+<p>So now the big question: Why? Why complicate things like this? Why not just use multiple lists as arguments to gather the data we want?</p>
+<p>Well, Collector functions offer two advantages: Delayed Execution, and Continuations.</p>
+<p>To address the first point, in this example, each generated lambda is doing something relatively inexpensive: using **cons** to prepend a number to a list. But what if it was performing some sort of expensive operation? For example: performing operations on a matrix with massive proportions, or rendering graphics. Perhaps there is hypothetical example where we do not want to do anything computationally expensive until the data input has been completely verified, from start to finish? In that case a collector paradigm would work well. Building the collector works sort of as a type of manifest or queue, of operations to be performed.</p>
+<p>Secondly, if you have a function which represents a series of steps, and each step has their own state, you can travel back to these states. In effect, you save a snapshot of that point in time. And in Scheme, since you can pass function along; you can pass these snapshots around. This gives you flexibility to return back to times where data was valid or matched some sort of pattern. One thing that comes to mind is traversing a Tree data structure and if you are exploring the children of a branch, you can pass forward a collector that represents that root, until you reach something you need and feed that data into the collector.</p>

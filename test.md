@@ -23,3 +23,7 @@ Here we will a **random** paragraph for us to analyze! We can add any text we *w
 This is a code block!
 int a = 1;
 ```
+
+| Hello | What is | Up |
+|-------|---------|----|
+| 1     |     2   | 3  |
