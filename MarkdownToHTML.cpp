@@ -112,9 +112,7 @@ void MarkdownToHTML::processCodeBlockLine(const sv_match& matches)
     }
 
     HTMLElement div = HTMLElement("div");
-    div
-        .setAttribute("class", "code")
-        .setAttribute("style", "padding: 10px; color: white; background-color: black");
+    div.setAttribute("class", "code");
 
     insertionPoint = &(insertionPoint->appendChild(div));
     lineState = inCodeBlock;
