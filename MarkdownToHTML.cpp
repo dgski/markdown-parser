@@ -125,12 +125,39 @@ void MarkdownToHTML::processTableLine(const sv_match& matches)
     cout << "FOUND TABLE LINE!" << endl;
     cout << matches[0].str() << endl;
 
+    if(matches[0].str().find("---") != string::npos)
+        return;
+
+
+    string tag_name;
+
     if(lineState != inTable)
     {
         insertionPoint = &(insertionPoint->appendChild(HTMLElement("table")));
+        tag_name = "th";
         lineState = inTable;
     }
+    else
+    {
+        tag_name = "td";
+    }
 
+    insertionPoint = &(insertionPoint->appendChild(HTMLElement("tr")));
+
+    string cellValue;
+    for(char c : matches[0].str())
+    {
+        if(c == '|')
+        {
+            insertionPoint->appendChild(HTMLElement(tag_name.c_str(), cellValue));
+            cellValue.clear();
+            continue;
+        }
+        cellValue += c;
+    }
+    
+    insertionPoint->appendChild(HTMLElement(tag_name.c_str(), cellValue));
+    insertionPoint = insertionPoint->getParent();
     // TODO: Create Table
 }
 
