@@ -120,15 +120,11 @@ void MarkdownToHTML::processCodeBlockLine(const sv_match& matches)
 
 void MarkdownToHTML::processTableLine(const sv_match& matches)
 {
-    cout << "FOUND TABLE LINE!" << endl;
-    cout << matches[0].str() << endl;
-
-    if(matches[0].str().find("---") != string::npos)
+    if(matches[0].str().find("---") != string::npos) // <th> underline
         return;
 
-
+    // Decide whether td or th
     string tag_name;
-
     if(lineState != inTable)
     {
         insertionPoint = &(insertionPoint->appendChild(HTMLElement("table")));
@@ -147,16 +143,20 @@ void MarkdownToHTML::processTableLine(const sv_match& matches)
     {
         if(c == '|')
         {
-            insertionPoint->appendChild(HTMLElement(tag_name.c_str(), cellValue));
+            HTMLElement cell(tag_name.c_str());
+            processSubExpressions(string_view(cellValue), cell);
+            insertionPoint->appendChild(cell);
+
             cellValue.clear();
             continue;
         }
         cellValue += c;
     }
     
-    insertionPoint->appendChild(HTMLElement(tag_name.c_str(), cellValue));
+    HTMLElement cell(tag_name.c_str());
+    processSubExpressions(string_view(cellValue), cell);
+    insertionPoint->appendChild(cell);
     insertionPoint = insertionPoint->getParent();
-    // TODO: Create Table
 }
 
 void MarkdownToHTML::processEmptyLine()
