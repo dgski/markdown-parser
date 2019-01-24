@@ -1,7 +1,7 @@
 #include <string>
 #include <regex>
 #include <memory>
-#include "HTMLElement.h"
+#include "html-element/HTMLElement.h"
 
 using namespace std;
 
@@ -10,7 +10,7 @@ const regex headingRegex("\(#+) (.+)");
 const regex unorderedListItemRegex("- (.+)");
 const regex orderedListItemRegex("([0-9]+)\\.(.+)");
 const regex codeRegex("```(.+)?");
-const regex tableRegex("\\|((.+)\\|)+");
+const regex tableRegex(".+(\\|.+)+");
 
 // Regular Expressions for in-line elements
 const regex boldRegex("\\*\\*(\\S(.*?\\S)?)\\*\\*");
@@ -53,14 +53,13 @@ typedef match_results<std::string_view::const_iterator> sv_match;
 
 class MarkdownToHTML
 {
+    ParserLineState lineState = inNothing;
+
     HTMLElement rootNode;
     HTMLElement* insertionPoint = nullptr;
 
-    ParserLineState lineState = inNothing;
-
     // Line Processing
     LineType determineLineType(const string_view& input, sv_match& matches);
-
     void processHeadingLine(const sv_match& matches);
     void processUnorderedListItemLine(const sv_match& matches);
     void processOrderedListItemLine(const sv_match& matches);
@@ -71,7 +70,6 @@ class MarkdownToHTML
 
     // Expression Processing
     ExpressionType determineExpressionType(const string_view& input, sv_match& matches);
-
     void processSubExpressions(const string_view& input, HTMLElement& parent);
     void processBoldExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
     void processItalicExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
@@ -80,17 +78,11 @@ class MarkdownToHTML
     void processTextExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
 
 public:
-    MarkdownToHTML(bool generateFullPage = true)
-    : rootNode((generateFullPage) ? "html" : "blank")
-    {
-        if(generateFullPage)
-            insertionPoint = &(rootNode.appendChild(HTMLElement("body")));
-        else
-            insertionPoint = &rootNode;
-    };
+    MarkdownToHTML(bool generateFullPage = true);
     void processLine(string& input);
-    string generate();
-    HTMLElement& getRootNode();
+    const HTMLElement& getcRootNode() const;
 };
+
+ostream& operator<<(ostream& stream, const MarkdownToHTML& parser);
 
 #pragma once

@@ -1,0 +1,2 @@
+#!/bin/bash
+g++ -std=c++17 Main.cpp ../MarkdownToHTML.cpp ../html-element/HTMLElement.cpp -o markdown-parser -g

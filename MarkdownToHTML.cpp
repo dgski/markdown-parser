@@ -1,6 +1,15 @@
 #include <iostream>
 #include "MarkdownToHTML.h"
 
+MarkdownToHTML::MarkdownToHTML(bool generateFullPage)
+: rootNode((generateFullPage) ? "html" : "blank")
+{
+    if(generateFullPage)
+        insertionPoint = &(rootNode.appendChild(HTMLElement("body")));
+    else
+        insertionPoint = &rootNode;
+};
+
 void MarkdownToHTML::processLine(string& input)
 {
     sv_match matches;
@@ -36,7 +45,6 @@ void MarkdownToHTML::processLine(string& input)
     }
 }
 
-// Use regex to determine which kind of line it is
 LineType MarkdownToHTML::determineLineType(const string_view& input, sv_match& matches)
 {
     if(regex_match(input.begin(), input.end(), matches, headingRegex))
@@ -55,7 +63,6 @@ LineType MarkdownToHTML::determineLineType(const string_view& input, sv_match& m
     return Other;
 }
 
-// Process a Line Containing a Header
 void MarkdownToHTML::processHeadingLine(const sv_match& matches)
 {
     if(lineState != inNothing)
@@ -67,7 +74,6 @@ void MarkdownToHTML::processHeadingLine(const sv_match& matches)
     insertionPoint->appendChild(HTMLElement(tag.c_str(), matches[2].str()));
 }
 
-// Process a Line Containing an Unordered List Item
 void MarkdownToHTML::processUnorderedListItemLine(const sv_match& matches)
 {
     if(lineState == inNothing)
@@ -82,7 +88,6 @@ void MarkdownToHTML::processUnorderedListItemLine(const sv_match& matches)
     insertionPoint->appendChild(li);
 }
 
-// Process a Line Containing an Ordered List Item
 void MarkdownToHTML::processOrderedListItemLine(const sv_match& matches)
 {
     if(lineState == inNothing)
@@ -97,7 +102,6 @@ void MarkdownToHTML::processOrderedListItemLine(const sv_match& matches)
     insertionPoint->appendChild(li);
 }
 
-// Process a Line Containing a Code Block Start or End
 void MarkdownToHTML::processCodeBlockLine(const sv_match& matches)
 {
     if(lineState == inCodeBlock)
@@ -116,10 +120,10 @@ void MarkdownToHTML::processCodeBlockLine(const sv_match& matches)
     lineState = inCodeBlock;
 }
 
-// Process a Table Line
 void MarkdownToHTML::processTableLine(const sv_match& matches)
 {
     cout << "FOUND TABLE LINE!" << endl;
+    cout << matches[0].str() << endl;
 
     if(lineState != inTable)
     {
@@ -130,7 +134,6 @@ void MarkdownToHTML::processTableLine(const sv_match& matches)
     // TODO: Create Table
 }
 
-// Process an Empty Line
 void MarkdownToHTML::processEmptyLine()
 {
     if(lineState != inNothing)
@@ -140,7 +143,6 @@ void MarkdownToHTML::processEmptyLine()
     }
 }
 
-// Process a Line that doesnt fit any other categories
 void MarkdownToHTML::processOtherLine(string& input)
 {
     if(lineState == inUnorderedList || lineState == inOrderedList || lineState == inTable)
@@ -168,7 +170,6 @@ void MarkdownToHTML::processOtherLine(string& input)
     }
 }
 
-// Find Expression in String
 void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement& parent)
 {
     sv_match matches;
@@ -194,17 +195,17 @@ void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement
     }
 }
 
-// Determine what kind of expression this is
 ExpressionType MarkdownToHTML::determineExpressionType(const string_view& input, sv_match& matches)
 {
     if(regex_search(input.begin(), input.end(), matches, boldRegex))
         return Bold;
     else if(regex_search(input.begin(), input.end(), matches, italicRegex))
         return Italic;
-    else if(regex_search(input.begin(), input.end(), matches, linkRegex))
-        return Link;
     else if(regex_search(input.begin(), input.end(), matches, imageRegex))
         return Image;
+    else if(regex_search(input.begin(), input.end(), matches, linkRegex))
+        return Link;
+
 
     return Text;
 }
@@ -269,18 +270,16 @@ void MarkdownToHTML::processLinkExpression(const string_view& input, const sv_ma
 
 void MarkdownToHTML::processTextExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
 {
-    cout << "'" << input << "'" << endl;
     parent.appendChild(HTMLElement("text", string(input)));
 }
 
-// Generate the HTML of the read file
-string MarkdownToHTML::generate()
-{
-    return rootNode.generate();
-}
-
-// Get the root node
-HTMLElement& MarkdownToHTML::getRootNode()
+const HTMLElement& MarkdownToHTML::getcRootNode() const
 {
     return rootNode;
+}
+
+ostream& operator<<(ostream& stream, const MarkdownToHTML& parser)
+{
+    stream << parser.getcRootNode();
+    return stream;
 }
