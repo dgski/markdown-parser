@@ -1,4 +1,3 @@
 *.dSYM/
 .vscode/
 markdown-parser
-sample-parser/samples/
