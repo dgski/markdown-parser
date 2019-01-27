@@ -11,6 +11,7 @@ const regex unorderedListItemRegex("- (.+)");
 const regex orderedListItemRegex("([0-9]+)\\.(.+)");
 const regex codeRegex("```(.+)?");
 const regex tableRegex(".+(\\|.+)+");
+const regex emptyRegex("");
 
 // Regular Expressions for in-line elements
 const regex boldRegex("\\*\\*(\\S(.*?\\S)?)\\*\\*");
@@ -71,6 +72,7 @@ class MarkdownToHTML
     // Expression Processing
     ExpressionType determineExpressionType(const string_view& input, sv_match& matches);
     void processSubExpressions(const string_view& input, HTMLElement& parent);
+    void processSubExpressionsBetween(const char* begin, const char* end, HTMLElement& parent);
     void processBoldExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
     void processItalicExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
     void processImageExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
