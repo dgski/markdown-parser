@@ -193,7 +193,7 @@ void MarkdownToHTML::processOtherLine(string& input)
 
     if(lineState == inCodeBlock)
     {
-        insertionPoint->appendChild(HTMLElement("text", regex_replace(input,regex("\\s"),"&nbsp")));
+        insertionPoint->appendChild(TextElement(regex_replace(input,regex("\\s"),"&nbsp")));
 
         HTMLElement br("br");
         br.setSingle(true);
@@ -298,7 +298,7 @@ void MarkdownToHTML::processLinkExpression(const string_view& input, const sv_ma
 
 void MarkdownToHTML::processTextExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
 {
-    parent.appendChild(HTMLElement("text", string(input)));
+    parent.appendChild(TextElement(string(input)));
 }
 
 const HTMLElement& MarkdownToHTML::getcRootNode() const
