@@ -3,15 +3,16 @@
 #include <array>
 
 MarkdownToHTML::MarkdownToHTML(bool generateFullPage)
-: rootNode((generateFullPage) ? "html" : "blank")
 {
+    rootNode = make_shared<HTMLElement>((generateFullPage) ? "html" : "blank");
+
     if(generateFullPage)
     {
-        rootNode.appendChild(HTMLElement("head"));
-        insertionPoint = &(rootNode.appendChild(HTMLElement("body")));
+        rootNode->appendChild(make_HTMLElement("head"));
+        insertionPoint = rootNode->appendChild(make_HTMLElement("body"));
     }
     else
-        insertionPoint = &rootNode;
+        insertionPoint = rootNode.get();
 };
 
 void MarkdownToHTML::processLine(string& input)
@@ -77,19 +78,22 @@ void MarkdownToHTML::processHeadingLine(const sv_match& matches)
     int hSize = matches[1].length();
     string tag = "h" + to_string(hSize);
 
-    insertionPoint->appendChild(HTMLElement(tag.c_str(), matches[2].str()));
+    auto heading = make_HTMLElement(tag.c_str());
+    heading->appendChild(make_TextElement(matches[2].str().c_str()));
+
+    insertionPoint->appendChild(heading);
 }
 
 void MarkdownToHTML::processUnorderedListItemLine(const sv_match& matches)
 {
     if(lineState == inNothing)
     {
-        HTMLElement ul = HTMLElement{"ul"};
-        insertionPoint = &(insertionPoint->appendChild(ul));
+        auto ul = make_HTMLElement("ul");
+        insertionPoint = insertionPoint->appendChild(ul);
         lineState = inUnorderedList;
     }
 
-    HTMLElement li = HTMLElement("li");
+    auto li = make_HTMLElement("li");
     processSubExpressions(string_view(matches[1].first, matches[1].length()), li);
     insertionPoint->appendChild(li);
 }
@@ -98,12 +102,12 @@ void MarkdownToHTML::processOrderedListItemLine(const sv_match& matches)
 {
     if(lineState == inNothing)
     {
-        HTMLElement ol = HTMLElement{"ol"};
-        insertionPoint = &(insertionPoint->appendChild(ol));
+        auto ol = make_HTMLElement("ol");
+        insertionPoint = insertionPoint->appendChild(ol);
         lineState = inOrderedList;
     }
 
-    HTMLElement li = HTMLElement("li");
+    auto li = make_HTMLElement("li");
     processSubExpressions(string_view(matches[2].first, matches[2].length()), li);
     insertionPoint->appendChild(li);
 }
@@ -117,10 +121,10 @@ void MarkdownToHTML::processCodeBlockLine(const sv_match& matches)
         return;
     }
 
-    HTMLElement div = HTMLElement("div");
-    div.setAttribute("class", "code");
+    auto div = make_HTMLElement("div");
+    div->setAttribute("class", "code");
 
-    insertionPoint = &(insertionPoint->appendChild(div));
+    insertionPoint = insertionPoint->appendChild(div);
     lineState = inCodeBlock;
 }
 
@@ -133,7 +137,7 @@ void MarkdownToHTML::processTableLine(const sv_match& matches)
     string tag_name;
     if(lineState != inTable)
     {
-        insertionPoint = &(insertionPoint->appendChild(HTMLElement("table")));
+        insertionPoint = insertionPoint->appendChild(make_HTMLElement("table"));
         tag_name = "th";
         lineState = inTable;
     }
@@ -142,14 +146,14 @@ void MarkdownToHTML::processTableLine(const sv_match& matches)
         tag_name = "td";
     }
 
-    insertionPoint = &(insertionPoint->appendChild(HTMLElement("tr")));
+    insertionPoint = insertionPoint->appendChild(make_HTMLElement("tr"));
 
     string cellValue;
     for(char c : matches[0].str())
     {
         if(c == '|')
         {
-            HTMLElement cell(tag_name.c_str());
+            auto cell = make_HTMLElement(tag_name.c_str());
             processSubExpressions(string_view(cellValue), cell);
             insertionPoint->appendChild(cell);
 
@@ -159,7 +163,7 @@ void MarkdownToHTML::processTableLine(const sv_match& matches)
         cellValue += c;
     }
     
-    HTMLElement cell(tag_name.c_str());
+    auto cell = make_HTMLElement(tag_name.c_str());
     processSubExpressions(string_view(cellValue), cell);
     insertionPoint->appendChild(cell);
     insertionPoint = insertionPoint->getParent();
@@ -184,24 +188,24 @@ void MarkdownToHTML::processOtherLine(string& input)
 
     if(lineState == inNothing)
     {
-        HTMLElement p = HTMLElement("p");
+        auto p = make_HTMLElement("p");
         processSubExpressions(string_view(input), p);
 
-        insertionPoint = &(insertionPoint->appendChild(p));
+        insertionPoint = insertionPoint->appendChild(p);
         lineState = inParagraph;
     }
 
     if(lineState == inCodeBlock)
     {
-        insertionPoint->appendChild(TextElement(regex_replace(input,regex("\\s"),"&nbsp")));
+        insertionPoint->appendChild(make_TextElement(regex_replace(input,regex("\\s"),"&nbsp").c_str()));
 
-        HTMLElement br("br");
-        br.setSingle(true);
+        auto br = make_HTMLElement("br");
+        br->setSingle(true);
         insertionPoint->appendChild(br);
     }
 }
 
-void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement& parent)
+void MarkdownToHTML::processSubExpressions(const string_view& input, shared_ptr<HTMLElement> parent)
 {
     sv_match matches;
     ExpressionType currentExpression = determineExpressionType(input, matches);
@@ -226,7 +230,7 @@ void MarkdownToHTML::processSubExpressions(const string_view& input, HTMLElement
     }
 }
 
-void MarkdownToHTML::processSubExpressionsBetween(const char* begin, const char* end, HTMLElement& parent)
+void MarkdownToHTML::processSubExpressionsBetween(const char* begin, const char* end, shared_ptr<HTMLElement> parent)
 {
     size_t view_length = end - begin;
     processSubExpressions(string_view(begin, view_length), parent);
@@ -250,60 +254,61 @@ ExpressionType MarkdownToHTML::determineExpressionType(const string_view& input,
     return Text;
 }
 
-void MarkdownToHTML::processBoldExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
+void MarkdownToHTML::processBoldExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent)
 {
     processSubExpressionsBetween(input.begin(), matches[0].first, parent);
     
-    HTMLElement b = HTMLElement("b");
+    auto b = make_HTMLElement("b");
     processSubExpressionsBetween(matches[1].first, matches[1].second, b);
-    parent.appendChild(b);
+    parent->appendChild(b);
 
     processSubExpressionsBetween(matches[0].second, input.end(), parent);
 }
 
-void MarkdownToHTML::processItalicExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
+void MarkdownToHTML::processItalicExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent)
 {
     processSubExpressionsBetween(input.begin(), matches[0].first, parent);
 
-    HTMLElement i = HTMLElement("i");
+    auto i = make_HTMLElement("i");
     processSubExpressionsBetween(matches[1].first, matches[1].second, i);
-    parent.appendChild(i);
+    parent->appendChild(i);
 
     processSubExpressionsBetween(matches[0].second, input.end(), parent);
 }
 
-void MarkdownToHTML::processImageExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
+void MarkdownToHTML::processImageExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent)
 {
     processSubExpressionsBetween(input.begin(), matches[0].first, parent);
 
-    HTMLElement img = HTMLElement("img");
-    img.setAttribute("alt", matches[1].str().c_str());
-    img.setAttribute("src", matches[2].str().c_str());
-    parent.appendChild(img);
+    auto img = make_HTMLElement("img");
+    img
+        ->setAttribute("alt", matches[1].str().c_str())
+        ->setAttribute("src", matches[2].str().c_str());
+    parent->appendChild(img);
 
     processSubExpressionsBetween(matches[0].second, input.end(), parent);
 }
 
-void MarkdownToHTML::processLinkExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
+void MarkdownToHTML::processLinkExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent)
 {
     processSubExpressionsBetween(input.begin(), matches[0].first, parent);
 
-    HTMLElement a = HTMLElement("a");
-    a.setAttribute("href", matches[2].str().c_str());
+    auto a = make_HTMLElement("a");
+    a->setAttribute("href", matches[2].str().c_str());
     processSubExpressionsBetween(matches[1].first, matches[1].second, a);
-    parent.appendChild(a);
+    parent->appendChild(a);
 
     processSubExpressionsBetween(matches[0].second, input.end(), parent);
 }
 
-void MarkdownToHTML::processTextExpression(const string_view& input, const sv_match& matches, HTMLElement& parent)
+void MarkdownToHTML::processTextExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent)
 {
-    parent.appendChild(TextElement(string(input)));
+    parent->appendChild(make_TextElement(string(input).c_str()));
 }
 
 const HTMLElement& MarkdownToHTML::getcRootNode() const
 {
-    return rootNode;
+    return *rootNode;
 }
 
 ostream& operator<<(ostream& stream, const MarkdownToHTML& parser)

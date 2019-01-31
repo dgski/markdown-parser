@@ -56,7 +56,7 @@ class MarkdownToHTML
 {
     ParserLineState lineState = inNothing;
 
-    HTMLElement rootNode;
+    shared_ptr<HTMLElement> rootNode = nullptr;
     HTMLElement* insertionPoint = nullptr;
 
     // Line Processing
@@ -71,13 +71,13 @@ class MarkdownToHTML
 
     // Expression Processing
     ExpressionType determineExpressionType(const string_view& input, sv_match& matches);
-    void processSubExpressions(const string_view& input, HTMLElement& parent);
-    void processSubExpressionsBetween(const char* begin, const char* end, HTMLElement& parent);
-    void processBoldExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
-    void processItalicExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
-    void processImageExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
-    void processLinkExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
-    void processTextExpression(const string_view& input, const sv_match& matches, HTMLElement& parent);
+    void processSubExpressions(const string_view& input, shared_ptr<HTMLElement> parent);
+    void processSubExpressionsBetween(const char* begin, const char* end, shared_ptr<HTMLElement> parent);
+    void processBoldExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent);
+    void processItalicExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent);
+    void processImageExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent);
+    void processLinkExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent);
+    void processTextExpression(const string_view& input, const sv_match& matches, shared_ptr<HTMLElement> parent);
 
 public:
     MarkdownToHTML(bool generateFullPage = true);
