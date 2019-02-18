@@ -15,8 +15,8 @@ const regex emptyRegex("");
 
 // Regular Expressions for in-line elements
 const regex boldRegex("\\*\\*(\\S(.*?\\S)?)\\*\\*");
-const regex italicRegex("\\*(.+)\\*");
-const regex linkRegex("\\[(.+)\\]\\((.+)\\)");
+const regex italicRegex("\\*(\\S(.*?\\S)?)\\*");
+const regex linkRegex("(?:__|[*#])|\\[(.*?)\\]\\((.*?)\\)");
 const regex imageRegex("!\\[(.+)\\]\\((.+)\\)");
 
 // Represents the current state of the parser - needed for elements spaning multiple lines
