@@ -197,7 +197,12 @@ void MarkdownToHTML::processOtherLine(string& input)
 
     if(lineState == inCodeBlock)
     {
-        insertionPoint->appendChild(make_TextElement(regex_replace(input,regex("\\s"),"&nbsp").c_str()));
+        string htmlCompatible = regex_replace(input,regex("\\s"),"&nbsp;");
+        htmlCompatible = regex_replace(htmlCompatible, regex("<"), "&lt;");
+        htmlCompatible = regex_replace(htmlCompatible, regex(">"), "&gt;");
+
+
+        insertionPoint->appendChild(make_TextElement(htmlCompatible.c_str()));
 
         auto br = make_HTMLElement("br");
         br->setSingle(true);
