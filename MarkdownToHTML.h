@@ -60,6 +60,7 @@ class MarkdownToHTML
     HTMLElement* insertionPoint = nullptr;
 
     // Line Processing
+    void processEscapeCharacters(string& input) const;
     LineType determineLineType(const string_view& input, sv_match& matches);
     void processHeadingLine(const sv_match& matches);
     void processUnorderedListItemLine(const sv_match& matches);

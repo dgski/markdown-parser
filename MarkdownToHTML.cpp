@@ -17,6 +17,8 @@ MarkdownToHTML::MarkdownToHTML(bool generateFullPage)
 
 void MarkdownToHTML::processLine(string& input)
 {
+    processEscapeCharacters(input);
+
     sv_match matches;
     string_view inputView(input);
 
@@ -48,6 +50,13 @@ void MarkdownToHTML::processLine(string& input)
     case Other:
         processOtherLine(input);
     }
+}
+
+void MarkdownToHTML::processEscapeCharacters(string& input) const
+{
+    // Just '<' and '>' characters for now, no support for raw HTML tags
+    input = regex_replace(input, regex("<"), "&lt;");
+    input = regex_replace(input, regex(">"), "&gt;");
 }
 
 LineType MarkdownToHTML::determineLineType(const string_view& input, sv_match& matches)
